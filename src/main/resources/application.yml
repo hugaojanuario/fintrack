@@ -35,3 +35,7 @@ api:
   security:
     token:
       secret: ${JWT_SECRET:dev-secret-change-in-production}
+
+brapi:
+  token: ${BRAPI_TOKEN:}
+  tickers: ${BRAPI_TICKERS:PETR4,VALE3,ITUB4,BBDC4,ABEV3,WEGE3,RENT3}
