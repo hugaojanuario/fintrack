@@ -1,76 +1,48 @@
 package br.com.fintrack.domain.user.service;
 
 import br.com.fintrack.domain.user.entity.User;
-import br.com.fintrack.domain.user.entity.dtos.CreateUserRequestDTO;
 import br.com.fintrack.domain.user.entity.dtos.UpdateUserRequestDTO;
 import br.com.fintrack.domain.user.entity.dtos.UserResponseDTO;
 import br.com.fintrack.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
-    private final UserRepository repository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserResponseDTO create (CreateUserRequestDTO request){
-        User user = new User();
-        user.setName(request.name());
-        user.setEmail(request.email());
-        user.setPasswordHash(request.passwordHash());
-        user.setRole(request.role());
-        user.setInvestorProfile(request.investorProfile());
-        user.setMonthlyIncome(request.monthlyIncome());
-        user.setActive(true);
-
-        User saved = repository.save(user);
-
-        return new UserResponseDTO(saved);
-    }
-
-    public Page<UserResponseDTO> getAll (Pageable pageable){
-        return repository.findByActiveTrue(pageable).map(UserResponseDTO:: new);
-    }
-
-    public UserResponseDTO getById (UUID id){
-        User user = repository.findById(id)
+    public UserResponseDTO getMe(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException());
 
         return new UserResponseDTO(user);
     }
 
-    public UserResponseDTO update (UUID id, UpdateUserRequestDTO request){
-        User user = repository.findById(id)
+    public UserResponseDTO update(String userEmail, UpdateUserRequestDTO request) {
+        User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException());
 
-        if (request.email() != null) {
-            user.setEmail(request.email());
-        }
-        if (request.passwordHash() != null){
-            user.setPasswordHash(request.passwordHash());
-        }
-        if (request.role() != null){
-            user.setRole(request.role());
-        }
-        if (request.investorProfile() != null){
-            user.setInvestorProfile(request.investorProfile());
-        }
+        if (request.name() != null) user.setName(request.name());
+        if (request.email() != null) user.setEmail(request.email());
+        if (request.password() != null) user.setPasswordHash(passwordEncoder.encode(request.password()));
+        if (request.investorProfile() != null) user.setInvestorProfile(request.investorProfile());
+        if (request.monthlyIncome() != null) user.setMonthlyIncome(request.monthlyIncome());
 
-        User upated = repository.save(user);
+        User updated = userRepository.save(user);
 
-        return new UserResponseDTO(upated);
+        return new UserResponseDTO(updated);
     }
 
-    public void softDelete (UUID id){
-        User user = repository.findById(id)
+    public void softDelete(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException());
+
         user.setActive(false);
-
-        repository.save(user);
+        userRepository.save(user);
     }
+
 }

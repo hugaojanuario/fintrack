@@ -1,4 +1,4 @@
-package br.com.fintrack.domain.user.entity.dtos;
+package br.com.fintrack.domain.user.entity.dtos.auth;
 
 import br.com.fintrack.domain.user.entity.User;
 import br.com.fintrack.domain.user.entity.enums.InvestorProfile;
@@ -8,17 +8,16 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record UserResponseDTO(
+public record AuthRegisterResponseDTO(
         UUID id,
         String name,
         String email,
         UserRole role,
         InvestorProfile investorProfile,
         BigDecimal monthlyIncome,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime createdAt
 ) {
-    public UserResponseDTO(User user) {
+    public AuthRegisterResponseDTO(User user) {
         this(
                 user.getId(),
                 user.getName(),
@@ -26,8 +25,7 @@ public record UserResponseDTO(
                 user.getRole(),
                 user.getInvestorProfile(),
                 user.getMonthlyIncome(),
-                user.getCreatedAt(),
-                user.getUpdatedAt()
+                user.getCreatedAt()
         );
     }
 
