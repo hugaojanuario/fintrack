@@ -1,5 +1,7 @@
 package br.com.fintrack.domain.market.service;
 
+import br.com.fintrack.domain.kafka.KafkaProducerService;
+import br.com.fintrack.domain.kafka.events.MarketQuoteUpdatedEvent;
 import br.com.fintrack.domain.market.client.BrapiClient;
 import br.com.fintrack.domain.market.client.BrapiQuoteDTO;
 import br.com.fintrack.domain.market.entity.MarketQuote;
@@ -20,6 +22,7 @@ public class MarketQuoteService {
 
     private final MarketQuoteRepository repository;
     private final BrapiClient brapiClient;
+    private final KafkaProducerService kafkaProducerService;
 
     @Value("${brapi.tickers}")
     private String tickers;
@@ -58,7 +61,14 @@ public class MarketQuoteService {
                     : null);
             quote.setQuoteDate(LocalDateTime.now());
 
-            repository.save(quote);
+            MarketQuote saved = repository.save(quote);
+
+            kafkaProducerService.publishMarketQuoteUpdatedEvent(new MarketQuoteUpdatedEvent(
+                    saved.getTicker(),
+                    saved.getPrice(),
+                    saved.getChangePercent(),
+                    saved.getQuoteDate()
+            ));
         }
     }
 }

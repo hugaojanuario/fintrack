@@ -7,6 +7,8 @@ import br.com.fintrack.domain.goal.entity.dtos.GoalResponseDTO;
 import br.com.fintrack.domain.goal.entity.dtos.UpdateGoalRequestDTO;
 import br.com.fintrack.domain.goal.entity.enums.GoalStatus;
 import br.com.fintrack.domain.goal.repository.GoalRepository;
+import br.com.fintrack.domain.kafka.KafkaProducerService;
+import br.com.fintrack.domain.kafka.events.GoalAchievedEvent;
 import br.com.fintrack.domain.user.entity.User;
 import br.com.fintrack.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class GoalService {
 
     private final GoalRepository repository;
     private final UserRepository userRepository;
+    private final KafkaProducerService kafkaProducerService;
 
     public GoalResponseDTO create(CreateGoalRequestDTO request, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
@@ -97,6 +100,16 @@ public class GoalService {
         }
 
         Goal updated = repository.save(goal);
+
+        if (updated.getStatus() == GoalStatus.COMPLETED) {
+            kafkaProducerService.publishGoalAchievedEvent(new GoalAchievedEvent(
+                    updated.getUser().getId(),
+                    updated.getId(),
+                    updated.getTitle(),
+                    updated.getTargetAmount(),
+                    LocalDateTime.now()
+            ));
+        }
 
         return buildResponse(updated);
     }
