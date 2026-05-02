@@ -37,7 +37,7 @@ public class DebtService {
         debt.setRemainingAmount(request.totalAmount());
         debt.setInterestRate(request.interestRate());
         debt.setDueDay(request.dueDay());
-        debt.setStatus(DebtStatus.ATIVA);
+        debt.setStatus(DebtStatus.ACTIVE);
         debt.setActive(true);
 
         Debt saved = repository.save(debt);
@@ -103,7 +103,7 @@ public class DebtService {
 
         if (newRemaining.compareTo(BigDecimal.ZERO) <= 0) {
             debt.setRemainingAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
-            debt.setStatus(DebtStatus.QUITADA);
+            debt.setStatus(DebtStatus.PAID);
         } else {
             debt.setRemainingAmount(newRemaining);
         }
