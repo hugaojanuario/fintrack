@@ -4,6 +4,12 @@ import br.com.fintrack.domain.expense.entity.dtos.CreateExpenseRequestDTO;
 import br.com.fintrack.domain.expense.entity.dtos.ExpenseResponseDTO;
 import br.com.fintrack.domain.expense.entity.dtos.UpdateExpenseRequestDTO;
 import br.com.fintrack.domain.expense.service.ExpenseService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,12 +32,21 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/expenses")
 @RequiredArgsConstructor
+@Tag(name = "Expenses", description = "Gestão de despesas mensais")
+@SecurityRequirement(name = "bearerAuth")
 public class ExpenseController {
 
     private final ExpenseService service;
 
     @PostMapping
-    public ResponseEntity<ExpenseResponseDTO> create(@RequestBody @Valid CreateExpenseRequestDTO request, Authentication authentication, UriComponentsBuilder uriBuilder) {
+    @Operation(summary = "Cria uma nova despesa")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Despesa criada"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
+    public ResponseEntity<ExpenseResponseDTO> create(@RequestBody @Valid CreateExpenseRequestDTO request,
+                                                      Authentication authentication,
+                                                      UriComponentsBuilder uriBuilder) {
         var newExpense = service.create(request, authentication.getName());
         var uri = uriBuilder.path("/api/v1/expenses/{id}").buildAndExpand(newExpense.id()).toUri();
 
@@ -39,6 +54,8 @@ public class ExpenseController {
     }
 
     @GetMapping
+    @Operation(summary = "Lista as despesas ativas do usuário (paginado)")
+    @ApiResponse(responseCode = "200", description = "Lista de despesas")
     public ResponseEntity<Page<ExpenseResponseDTO>> getAll(@PageableDefault(size = 5) Pageable pageable,
                                                             Authentication authentication) {
         var expenses = service.getAll(authentication.getName(), pageable);
@@ -47,7 +64,12 @@ public class ExpenseController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ExpenseResponseDTO> getById(@PathVariable UUID id,
+    @Operation(summary = "Retorna uma despesa pelo ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Despesa encontrada"),
+            @ApiResponse(responseCode = "404", description = "Despesa não encontrada")
+    })
+    public ResponseEntity<ExpenseResponseDTO> getById(@Parameter(description = "ID da despesa") @PathVariable UUID id,
                                                        Authentication authentication) {
         var expense = service.getById(id, authentication.getName());
 
@@ -55,7 +77,12 @@ public class ExpenseController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ExpenseResponseDTO> update(@PathVariable UUID id,
+    @Operation(summary = "Atualiza uma despesa")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Despesa atualizada"),
+            @ApiResponse(responseCode = "404", description = "Despesa não encontrada")
+    })
+    public ResponseEntity<ExpenseResponseDTO> update(@Parameter(description = "ID da despesa") @PathVariable UUID id,
                                                       @RequestBody @Valid UpdateExpenseRequestDTO request,
                                                       Authentication authentication) {
         var updated = service.update(id, request, authentication.getName());
@@ -64,10 +91,12 @@ public class ExpenseController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id, Authentication authentication) {
+    @Operation(summary = "Desativa uma despesa (soft delete)")
+    @ApiResponse(responseCode = "204", description = "Despesa desativada")
+    public ResponseEntity<Void> delete(@Parameter(description = "ID da despesa") @PathVariable UUID id,
+                                        Authentication authentication) {
         service.softDelete(id, authentication.getName());
 
         return ResponseEntity.noContent().build();
     }
-
 }

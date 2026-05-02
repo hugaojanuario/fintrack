@@ -5,6 +5,12 @@ import br.com.fintrack.domain.goal.entity.dtos.CreateGoalRequestDTO;
 import br.com.fintrack.domain.goal.entity.dtos.GoalResponseDTO;
 import br.com.fintrack.domain.goal.entity.dtos.UpdateGoalRequestDTO;
 import br.com.fintrack.domain.goal.service.GoalService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,11 +34,18 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/goals")
+@Tag(name = "Goals", description = "Gestão de metas financeiras com projeções")
+@SecurityRequirement(name = "bearerAuth")
 public class GoalController {
 
     private final GoalService service;
 
     @PostMapping
+    @Operation(summary = "Cria uma nova meta financeira")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Meta criada"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
     public ResponseEntity<GoalResponseDTO> create(@RequestBody @Valid CreateGoalRequestDTO request,
                                                    Authentication authentication,
                                                    UriComponentsBuilder uriBuilder) {
@@ -43,6 +56,8 @@ public class GoalController {
     }
 
     @GetMapping
+    @Operation(summary = "Lista as metas ativas do usuário com projeções (paginado)")
+    @ApiResponse(responseCode = "200", description = "Lista de metas")
     public ResponseEntity<Page<GoalResponseDTO>> getAll(@PageableDefault(size = 5) Pageable pageable,
                                                          Authentication authentication) {
         var goals = service.getAll(authentication.getName(), pageable);
@@ -51,7 +66,12 @@ public class GoalController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<GoalResponseDTO> getById(@PathVariable UUID id,
+    @Operation(summary = "Retorna uma meta pelo ID com projeções")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Meta encontrada"),
+            @ApiResponse(responseCode = "404", description = "Meta não encontrada")
+    })
+    public ResponseEntity<GoalResponseDTO> getById(@Parameter(description = "ID da meta") @PathVariable UUID id,
                                                     Authentication authentication) {
         var goal = service.getById(id, authentication.getName());
 
@@ -59,7 +79,9 @@ public class GoalController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<GoalResponseDTO> update(@PathVariable UUID id,
+    @Operation(summary = "Atualiza os dados de uma meta")
+    @ApiResponse(responseCode = "200", description = "Meta atualizada")
+    public ResponseEntity<GoalResponseDTO> update(@Parameter(description = "ID da meta") @PathVariable UUID id,
                                                    @RequestBody @Valid UpdateGoalRequestDTO request,
                                                    Authentication authentication) {
         var updated = service.update(id, request, authentication.getName());
@@ -68,7 +90,12 @@ public class GoalController {
     }
 
     @PatchMapping("/{id}/contribute")
-    public ResponseEntity<GoalResponseDTO> contribute(@PathVariable UUID id,
+    @Operation(summary = "Registra uma contribuição na meta")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Contribuição registrada"),
+            @ApiResponse(responseCode = "404", description = "Meta não encontrada")
+    })
+    public ResponseEntity<GoalResponseDTO> contribute(@Parameter(description = "ID da meta") @PathVariable UUID id,
                                                        @RequestBody @Valid ContributeGoalRequestDTO request,
                                                        Authentication authentication) {
         var updated = service.contribute(id, request, authentication.getName());
@@ -77,7 +104,10 @@ public class GoalController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id, Authentication authentication) {
+    @Operation(summary = "Cancela uma meta (soft delete)")
+    @ApiResponse(responseCode = "204", description = "Meta cancelada")
+    public ResponseEntity<Void> delete(@Parameter(description = "ID da meta") @PathVariable UUID id,
+                                        Authentication authentication) {
         service.softDelete(id, authentication.getName());
 
         return ResponseEntity.noContent().build();
